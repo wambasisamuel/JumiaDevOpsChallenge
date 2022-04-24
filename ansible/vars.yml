@@ -1,0 +1,9 @@
+db_user: devops
+db_password: D3v0p5_Ch@113ng3
+db_name: jumia_phone_validator
+
+new_user: swambasi
+copy_local_key: "{{ lookup('file','lookup('env','HOME') + '/dabdabs/challenge_keys/challenge_key.pub') }}"
+sys_packages: ["curl", "vim", "git", "ufw"]
+
+ssh_port: 1337

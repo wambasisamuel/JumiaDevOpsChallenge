@@ -1,0 +1,54 @@
+- name: "Permit HTTP connection to port 80"
+  ufw:
+    rule: allow
+    port: 80
+    proto: tcp
+
+- name: "Permit HTTPS connection to port 443"
+  ufw:
+    rule: allow
+    port: 443
+    proto: tcp
+
+- name: "Permit SSH"
+  ufw:
+    rule: allow
+    port: "{{ ssh_port }}"
+    proto: tcp
+
+- name: "Enable firewall"
+  ufw:
+    state: enabled
+    policy: deny
+    direction: incoming
+
+- name: "Install latest Nginx"
+  apt:
+    name: nginx
+    state: latest
+  become: yes
+
+- name: "Start Nginx"
+  service:
+    name: nginx
+    state: started
+  become: yes
+
+- name: "Copy the nginx config and restart"
+  copy:
+    src: nginx.conf
+    dest: /etc/nginx/sites-available/nginx.conf
+  become: yes
+
+- name: "nginx config simlink"
+  file:
+    src: /etc/nginx/sites-available/nginx.conf
+    dest: /etc/nginx/sites-enabled/default
+    state: link
+  become: yes
+
+- name: "Restart nginx"
+  service:
+    name: nginx
+    state: restarted
+  become: yes

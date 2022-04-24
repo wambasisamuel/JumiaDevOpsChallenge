@@ -1,0 +1,8 @@
+[app_servers]
+35.180.203.113 ansible_port=1337 ansible_ssh_user=ubuntu ansible_become=true
+
+[db_servers]
+35.180.79.187 ansible_port=1337 ansible_ssh_user=ubuntu ansible_become=true
+
+[load_balancer]
+15.236.42.24 ansible_port=1337 ansible_ssh_user=ubuntu ansible_become=true

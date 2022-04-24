@@ -1,0 +1,68 @@
+- name: "Permit connection to port 8080"
+  ufw:
+    rule: allow
+    from_ip: 15.236.42.24
+    port: 8080
+    proto: tcp
+
+- name: "Permit connection to port 8081"
+  ufw:
+    rule: allow
+    from_ip: 15.236.42.24
+    port: 8081
+    proto: tcp
+
+- name: "Permit SSH"
+  ufw:
+    rule: allow
+    port: "{{ ssh_port }}"
+    proto: tcp
+
+- name: "Enable firewall"
+  ufw:
+    state: enabled
+    policy: deny
+    direction: incoming
+
+- name: "Install Packages"
+  apt:
+    update_cache: yes
+    name:
+      [
+        "apt-transport-https",
+        "ca-certificates",
+        "curl",
+        "software-properties-common",
+        "python3-pip",
+        "virtualenv",
+        "python3-setuptools"
+      ]
+    state: latest
+
+- name: "Dokcer GPG apt Key"
+  apt_key:
+    url: https://download.docker.com/linux/ubuntu/gpg
+    state: present
+
+- name: "Docker Repository"
+  apt_repository:
+    repo: deb https://download.docker.com/linux/ubuntu bionic stable
+    state: present
+
+- name: "Install docker-ce"
+  apt: update_cache=yes name=docker-ce state=latest
+
+- name: "install docker-py"
+  pip: name=docker-py
+
+- name: "Enable Docker"
+  service:
+    name: "docker"
+    state: started
+    enabled: yes
+
+- name: "Show running containers"
+  shell: docker ps
+
+- name: "Show container images"
+  shell: docker images

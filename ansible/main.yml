@@ -1,0 +1,70 @@
+---
+- hosts: all
+  become: yes
+  gather_facts: false
+
+  vars_files:
+    - vars.yml
+
+  tasks:
+    - name: "Update packages"
+      apt:
+        upgrade: dist
+        update_cache: yes
+
+    - name: "Ensure group wheel exists"
+      group:
+        name: wheel
+        state: present
+
+    - name: "Allow sudo privileges to group wheel without password"
+      lineinfile:
+        path: /etc/sudoers
+        state: present
+        regexp: "^%wheel"
+        line: "%wheel ALL=(ALL) NOPASSWD: ALL"
+        validate: "/usr/sbin/visudo -cf %s"
+
+    - name: "Create new user, add to group wheel"
+      user:
+        name: "{{ new_user }}"
+        groups: wheel
+        append: true
+        create_home: true
+        shell: /bin/bash
+
+    - name: "Disable root password login"
+      lineinfile:
+        path: /etc/ssh/sshd_config
+        state: present
+        regexp: "^#?PermissionRootLogin"
+        line: "PermitRootLogin prohibit-password"
+
+    - name: "Install system packages"
+      apt:
+        name: "{{ sys_packages }}"
+        state: latest
+
+- hosts: app_servers
+  gather_facts: false
+  become: yes
+  vars_files:
+    - vars.yml
+  roles:
+    - app_servers
+
+- hosts: load_balancer
+  gather_facts: false
+  become: yes
+  vars_files:
+    - vars.yml
+  roles:
+    - load_balancer
+
+- hosts: db_servers
+  gather_facts: false
+  become: yes
+  vars_files:
+    - vars.yml
+  roles:
+    - db_servers

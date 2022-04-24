@@ -1,0 +1,84 @@
+- name: "Allow SSH"
+  ufw:
+    rule: allow
+    port: "{{ ssh_port }}"
+    proto: tcp
+
+- name: "Allow TCP connection to DB port"
+  ufw:
+    rule: allow
+    from_ip: 35.180.203.113
+    port: 5432
+    proto: tcp
+
+- name: "Enable firewall"
+  ufw:
+    state: enabled
+    policy: deny
+    direction: incoming
+
+- name: "Install Postgresql dependencies"
+  apt:
+    name: ["bash", "openssl", "libssl-dev", "libssl-doc"]
+    state: latest
+
+- name: "Install Postgresql"
+  apt:
+    name: ["postgresql", "postgresql-contrib", "libpq-dev", "python3-psycopg2"]
+
+- name: "Check if DB is initialized"
+  ansible.builtin.stat:
+    path: "/var/lib/pgsql/data/pg_hba.conf"
+  register: postgres_data
+
+- name: "Start and Enable DB service"
+  service: "name=postgresql state=started enabled=yes"
+
+- name: "Create database"
+  postgresql_db:
+    state: present
+    name: "{{ db_name }}"
+  become: yes
+  become_user: postgres
+
+- name: "Create database user"
+  postgresql_user:
+    state: present
+    db: "{{ db_name }}"
+    name: "{{ db_user }}"
+    password: "{{ db_password }}"
+    priv: ALL
+  become: yes
+  become_user: postgres
+
+- name: "Restrict User permissions"
+  postgresql_user:
+    state: present
+    name: "{{ db_user }}"
+    role_attr_flags: NOSUPERUSER,NOCREATEDB
+  become: yes
+  become_user: postgres
+
+- name: "MD5 connection to the db user"
+  postgresql_pg_hba:
+    dest: "~/main/pg_hba.conf"
+    contype: host
+    databases: all
+    method: md5
+    users: "{{ db_user }}"
+    create: true
+  become: yes
+  become_user: postgres
+  notify: restart postgres
+
+- name: " Copy database file to remote server"
+  copy:
+    src: sample.sql
+    dest: $HOME/sample.sql
+    owner: postgres
+    group: postgres
+
+- name: "Load database to Postgresql db"
+  shell: psql {{db_name}} < $HOME/sample.sql
+  become: yes
+  become_user: postgres
